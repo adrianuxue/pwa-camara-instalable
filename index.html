@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Inspección Visual PWA</title>
+  <meta name="description" content="PWA instalable con acceso consciente a la cámara para captura de evidencia fotográfica local.">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Identidad de la aplicación instalable -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+  <!-- Metadatos propietarios de Apple (iOS / WebKit) -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="InspecciónPWA">
+
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="marca">
+      <span class="marca__icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.1-1.7A1.5 1.5 0 0 1 9.6 3.5h4.8a1.5 1.5 0 0 1 1.3.8L16.8 6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
+          <circle cx="12" cy="12.5" r="3.4"/>
+        </svg>
+      </span>
+      <div class="marca__texto">
+        <h1>Inspección Visual</h1>
+        <p class="marca__sub">PWA instalable · cámara local</p>
+        <p class="marca__autor">Adrian Uxue Chavez Martinez</p>
+      </div>
+      <span id="estado-sw" class="chip chip--ok" hidden>Offline listo</span>
+    </div>
+  </header>
+
+  <main class="contenido">
+    <section class="card estado" aria-label="Estado de la aplicación">
+      <p id="mensaje-estado" role="status" aria-live="polite" data-tono="neutral">
+        Preparando la aplicación…
+      </p>
+    </section>
+
+    <section class="card" aria-labelledby="titulo-instalacion">
+      <h2 id="titulo-instalacion">Instalar en el teléfono</h2>
+      <p class="texto-suave">
+        Instalada, la aplicación abre en ventana propia (<em>standalone</em>), sin barra de
+        direcciones, y sigue funcionando sin conexión gracias al Service Worker.
+      </p>
+
+      <button id="btn-instalar" class="btn btn--primario btn--ancho" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4v10"/>
+          <path d="m8 10 4 4 4-4"/>
+          <path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/>
+        </svg>
+        Instalar aplicación
+      </button>
+
+      <div id="instrucciones-ios" class="aviso aviso--ios" hidden>
+        <h3>Instalar en iPhone / iPad</h3>
+        <p>
+          Safari en iOS no permite instalar desde un botón: la instalación se hace
+          manualmente desde el menú del navegador.
+        </p>
+        <ol class="pasos">
+          <li>Pulsa el botón <strong>Compartir</strong> (cuadrado con flecha hacia arriba).</li>
+          <li>Desplázate y elige <strong>Agregar a inicio</strong>.</li>
+          <li>Confirma con <strong>Agregar</strong> y abre la app desde el icono nuevo.</li>
+        </ol>
+        <p class="texto-suave">
+          Abrirla desde el icono es importante: en iOS, Safari y la app instalada
+          <strong>no comparten los permisos de cámara</strong>, y el aviso de consentimiento
+          volverá a aparecer.
+        </p>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="titulo-camara">
+      <div class="camara__cabecera">
+        <h2 id="titulo-camara">Cámara</h2>
+        <span id="lente-activa" class="chip" hidden>Trasera</span>
+      </div>
+
+      <div class="visor">
+        <video id="visor-camara" autoplay playsinline muted aria-label="Vista previa de la cámara"></video>
+        <div id="visor-placeholder" class="visor__placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.1-1.7A1.5 1.5 0 0 1 9.6 3.5h4.8a1.5 1.5 0 0 1 1.3.8L16.8 6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
+            <circle cx="12" cy="12.5" r="3.4"/>
+            <path d="m4 20 16-16"/>
+          </svg>
+          <p>La cámara está apagada</p>
+          <p class="visor__nota">El sensor se enciende solo cuando tú lo autorizas.</p>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Pre-Permiso: aparece ANTES del diálogo nativo del navegador -->
+      <div id="aviso-permiso" class="aviso aviso--permiso" role="region" aria-labelledby="titulo-permiso" hidden>
+        <h3 id="titulo-permiso">Antes de encender la cámara</h3>
+        <p>
+          Esta aplicación requiere acceso a tu cámara únicamente para mostrar una vista
+          previa local en pantalla. <strong>Ninguna imagen se envía a servidores externos.</strong>
+        </p>
+        <ul class="lista">
+          <li>Se encenderá la cámara <strong>trasera</strong>; puedes cambiar a la frontal cuando quieras.</li>
+          <li>El video y las fotos se procesan y quedan solo en tu dispositivo.</li>
+          <li>El navegador mostrará su propio aviso después de que confirmes. Si lo bloqueas, deberás reactivarlo desde los ajustes del navegador.</li>
+        </ul>
+        <div class="aviso__acciones">
+          <button id="btn-confirmar-permiso" class="btn btn--primario btn--ancho" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3 5 6v5c0 4.2 2.9 8 7 10 4.1-2 7-5.8 7-10V6z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            Aceptar y encender cámara
+          </button>
+          <button id="btn-cancelar-permiso" class="btn btn--fantasma btn--ancho" type="button">
+            Ahora no
+          </button>
+        </div>
+      </div>
+
+      <div class="controles">
+        <button id="btn-preparar-camara" class="btn btn--primario btn--ancho" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.1-1.7A1.5 1.5 0 0 1 9.6 3.5h4.8a1.5 1.5 0 0 1 1.3.8L16.8 6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>
+            <circle cx="12" cy="12.5" r="3.4"/>
+          </svg>
+          Solicitar acceso a la cámara
+        </button>
+
+        <button id="btn-alternar-camara" class="btn btn--secundario" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9a8 8 0 0 1 13.7-4.9L20 6.4"/>
+            <path d="M20 4v3.5h-3.5"/>
+            <path d="M20 15a8 8 0 0 1-13.7 4.9L4 17.6"/>
+            <path d="M4 20v-3.5h3.5"/>
+          </svg>
+          Cambiar cámara
+        </button>
+
+        <button id="btn-apagar-camara" class="btn btn--peligro" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 4v8"/>
+            <path d="M7.5 6.8a7 7 0 1 0 9 0"/>
+          </svg>
+          Apagar cámara
+        </button>
+
+        <button id="btn-capturar" class="btn btn--secundario btn--ancho" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5"/>
+            <circle cx="12" cy="12" r="3.5"/>
+          </svg>
+          Capturar foto
+        </button>
+      </div>
+    </section>
+
+    <section id="resultado-captura" class="card" aria-labelledby="titulo-captura" hidden>
+      <h2 id="titulo-captura">Última captura</h2>
+      <img id="foto-capturada" class="foto" alt="Fotografía capturada desde la cámara">
+      <a id="enlace-descarga" class="btn btn--secundario btn--ancho" href="#" download="evidencia.jpg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4v10"/>
+          <path d="m8 10 4 4 4-4"/>
+          <path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/>
+        </svg>
+        Descargar imagen
+      </a>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <p>Práctica PWA · manifest + Service Worker + cámara con consentimiento</p>
+  </footer>
+
+  <noscript>
+    <p class="aviso-noscript">Esta aplicación necesita JavaScript para acceder a la cámara.</p>
+  </noscript>
+
+  <script src="./app.js"></script>
+</body>
+</html>
